@@ -72,7 +72,7 @@ jobs:
           msbuild-architecture: x64
       - name: Build Aseprite
         run:
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
+          cmd /c call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
           cd C:\deps\aseprite
           mkdir build
           cd build
