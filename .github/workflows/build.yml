@@ -1,0 +1,84 @@
+name: Aseprite Build
+
+on:
+  workflow_dispatch:
+  
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Get Skia URL
+        shell: pwsh
+        run: |
+          Write-Host "Start Request Skia URL"
+          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/aseprite/skia/releases/latest" -Method Get
+          $url = 'https://github.com/aseprite/skia/releases/download/' + $response.tag_name + '/Skia-Windows-Release-x64.zip'
+          Write-Host "Skia URL: $url"
+          echo ('SKIA_URL=' + $url) >> $env:GITHUB_ENV
+      - name: Download And Unzip Skia
+        shell: pwsh
+        run: |
+          mkdir C:\deps
+          Invoke-WebRequest -Uri $env:SKIA_URL -OutFile "C:\deps\skia.zip"
+          Expand-Archive -Path "C:\deps\skia.zip" -DestinationPath "C:\deps\skia"
+          echo "SKIA_PATH=C:\deps\skia" >> $env:GITHUB_ENV
+      - name: Get Cmake Version
+        shell: pwsh
+        run: |
+          Write-Host "Start Request Cmake URL"
+          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/Kitware/CMake/releases/latest" -Method Get
+          $version = $response.tag_name -replace 'v', ''
+          Write-Host "CMAKE Version: $version"
+          echo ('CMAKE_VERSION=' + $version) >> $env:GITHUB_ENV
+      - name: Download And Unzip Cmake
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri ('https://github.com/Kitware/CMake/releases/download/v' + $env:CMAKE_VERSION + '/cmake-' + $env:CMAKE_VERSION + '-windows-x86_64.zip') -OutFile "C:\deps\cmake.zip"
+          Expand-Archive -Path "C:\deps\cmake.zip" -DestinationPath "C:\deps\cmake"
+          echo ('CMAKE_PATH=C:\deps\cmake\cmake-' + $env:CMAKE_VERSION + '-windows-x86_64') >> $env:GITHUB_ENV
+          echo ('C:\deps\cmake\cmake-' + $env:CMAKE_VERSION + '-windows-x86_64\bin') >> $env:GITHUB_PATH
+      - name: Get Ninja URL
+        shell: pwsh
+        run: |
+          Write-Host "Start Request Ninja URL"
+          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/ninja-build/ninja/releases/latest" -Method Get
+          $url = ($response.assets | Where-Object {$_.name -eq "ninja-win.zip"} ).browser_download_url
+          Write-Host "NINJA URL: $url"
+          echo "NINJA_URL=$url" >> $env:GITHUB_ENV
+      - name: Download And Unzip Ninja
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri $env:NINJA_URL -OutFile "C:\deps\ninja.zip"
+          Expand-Archive -Path "C:\deps\ninja.zip" -DestinationPath "$CMAKE_PATH\bin"
+      - name: Get Aseprite URL
+        shell: pwsh
+        run: |
+          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/aseprite/aseprite/releases/latest" -Method Get
+          $url = $response.assets[0].browser_download_url
+          Write-Host "Aseprite URL: $url"
+          echo ('ASEPRITE_URL=' + $url) >> $env:GITHUB_ENV
+      - name: Download And Unzip Aseprite
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri $env:ASEPRITE_URL -OutFile "C:\deps\aseprite.zip"
+          Expand-Archive -Path "C:\deps\aseprite.zip" -DestinationPath "C:\deps\aseprite"
+      - name: Add MSBuild
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+      - name: Build Aseprite
+        run:
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
+          cd C:\deps\aseprite
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLAF_BACKEND=skia -DSKIA_DIR=C:\deps\skia -DSKIA_LIBRARY_DIR=C:\deps\skia\out\Release-x64 -DSKIA_LIBRARY=C:\deps\skia\out\Release-x64\skia.lib -G Ninja ..
+          ninja aseprite
+
+
+
+          
