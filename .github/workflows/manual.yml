@@ -1,4 +1,4 @@
-name: Aseprite Build
+name: Aseprite manual build
 
 on:
   workflow_dispatch:
@@ -69,7 +69,6 @@ jobs:
       fail-fast: false
       matrix:
           build:
-              # macOS 通用 构建
               - name: macOS-arm64-build
                 os: macos-latest
                 arch: arm64
