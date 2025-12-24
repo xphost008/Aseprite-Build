@@ -95,7 +95,7 @@ jobs:
   macOS-Build:
     strategy:
       fail-fast: false
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -103,9 +103,7 @@ jobs:
         shell: bash
         run: |
           SKIA_TAG=$(curl -s https://api.github.com/repos/aseprite/skia/releases/latest | jq -r '.tag_name')
-          echo $SKIA_TAG
           SKIA_URL=https://github.com/aseprite/skia/releases/download/$SKIA_TAG/Skia-macOS-Release-x64.zip
-          echo $SKIA_URL
           echo "SKIA_URL=${SKIA_URL}" >> $GITHUB_ENV
       - name: Download And Unzip Skia
         shell: bash
@@ -113,7 +111,7 @@ jobs:
           mkdir $HOME/deps
           curl -L $SKIA_URL -o $HOME/deps/skia.zip
           mkdir -p $HOME/deps/skia
-          unzip $HOME/deps/skia.zip -d $HOME/deps/skia
+          unzip -q $HOME/deps/skia.zip -d $HOME/deps/skia
           echo "SKIA_PATH=$HOME/deps/skia" >> $GITHUB_ENV
       - name: Install CMake and Ninja
         shell: bash
@@ -123,14 +121,14 @@ jobs:
       - name: Get Aseprite URL
         shell: bash
         run: |
-          ASEPRITE_URL=$(curl -s https://api.github.com/repos/aseprite/aseprite/releases/latest | jq -r .assets[0].browser_download_url)
+          ASEPRITE_URL=$(curl -s https://api.github.com/repos/aseprite/aseprite/releases/latest | jq -r '.assets[0].browser_download_url')
           echo "ASEPRITE_URL=${ASEPRITE_URL}" >> $GITHUB_ENV
       - name: Download And Unzip Aseprite
         shell: bash
         run: |
           mkdir -p $HOME/deps/aseprite
           curl -L $ASEPRITE_URL -o $HOME/deps/aseprite.zip
-          unzip $HOME/deps/aseprite.zip -d $HOME/deps/aseprite
+          unzip -q $HOME/deps/aseprite.zip -d $HOME/deps/aseprite
       - name: Build Aseprite
         shell: bash
         run: |
