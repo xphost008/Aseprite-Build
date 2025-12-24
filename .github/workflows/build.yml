@@ -95,7 +95,20 @@ jobs:
   macOS-Build:
     strategy:
       fail-fast: false
-    runs-on: macos-15-intel
+      matrix:
+          build:
+              # macOS 通用 构建
+              - name: macOS-arm64-build
+                os: macos-latest
+                arch: arm64
+                arch2: arm64
+                version: '11.0'
+              - name: macOS-x86_64-build
+                os: macos-15-intel
+                arch: x86_64
+                arch2: x64
+                version: '10.14'
+    runs-on: ${{ matrix.build.os }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -103,7 +116,7 @@ jobs:
         shell: bash
         run: |
           SKIA_TAG=$(curl -s https://api.github.com/repos/aseprite/skia/releases/latest | jq -r '.tag_name')
-          SKIA_URL=https://github.com/aseprite/skia/releases/download/$SKIA_TAG/Skia-macOS-Release-x64.zip
+          SKIA_URL=https://github.com/aseprite/skia/releases/download/$SKIA_TAG/Skia-macOS-Release-${{ matrix.build.arch2 }}.zip
           echo "SKIA_URL=${SKIA_URL}" >> $GITHUB_ENV
       - name: Download And Unzip Skia
         shell: bash
@@ -137,13 +150,13 @@ jobs:
           cd build
           cmake \
             -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            -DCMAKE_OSX_ARCHITECTURE=x86_64 \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 \
+            -DCMAKE_OSX_ARCHITECTURE=${{ matrix.build.arch }} \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=${{ matrix.build.version }} \
             -DCMAKE_OSX_SYSROOT=/Applications/Xcode.app/Content/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk \
             -DLAF_BACKEND=skia \
             -DSKIA_DIR=$HOME/deps/skia \
-            -DSKIA_LIBRARY_DIR=$HOME/deps/skia/out/Release-x64 \
-            -DSKIA_LIBRARY=$HOME/deps/skia/out/Release-x64/libskia.a \
+            -DSKIA_LIBRARY_DIR=$HOME/deps/skia/out/Release-${{ matrix.build.arch2 }} \
+            -DSKIA_LIBRARY=$HOME/deps/skia/out/Release-${{ matrix.build.arch2 }}/libskia.a \
             -G Ninja \
             ..
           ninja aseprite
