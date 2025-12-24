@@ -115,12 +115,12 @@ jobs:
         shell: bash
         run: |
           SKIA_TAG=$(curl -s https://api.github.com/repos/aseprite/skia/releases/latest | jq -r '.tag_name')
+          echo $SKIA_TAG
           SKIA_URL=https://github.com/aseprite/skia/releases/download/$SKIA_TAG/Skia-macOS-Release-${{ matrix.build.arch2 }}.zip
           echo "SKIA_URL=${SKIA_URL}" >> $GITHUB_ENV
       - name: Download And Unzip Skia
         shell: bash
         run: |
-          echo $SKIA_URL
           mkdir $HOME/deps
           curl -L $SKIA_URL -o $HOME/deps/skia.zip
           mkdir -p $HOME/deps/skia
