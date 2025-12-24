@@ -165,3 +165,65 @@ jobs:
         with:
           name: Aseprite-Latest-macOS-${{ matrix.build.arch }}
           path: /Users/runner/deps/aseprite/build/bin
+  Linux-Build:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Get Skia URL
+        shell: bash
+        run: |
+          SKIA_TAG=$(curl -s https://api.github.com/repos/aseprite/skia/releases/latest | jq -r '.tag_name')
+          echo $SKIA_TAG
+          SKIA_URL=https://github.com/aseprite/skia/releases/download/$SKIA_TAG/Skia-Linux-Release-x64.zip
+          echo "SKIA_URL=${SKIA_URL}" >> $GITHUB_ENV
+      - name: Download And Unzip Skia
+        shell: bash
+        run: |
+          mkdir $HOME/deps
+          curl -L $SKIA_URL -o $HOME/deps/skia.zip
+          mkdir -p $HOME/deps/skia
+          unzip -q $HOME/deps/skia.zip -d $HOME/deps/skia
+          echo "SKIA_PATH=$HOME/deps/skia" >> $GITHUB_ENV
+      - name: Install CMake and Ninja
+        shell: bash
+        run: |
+          sudo apt install -y g++ clang cmake ninja-build libx11-dev libxcursor-dev libxi-dev libxrandr-dev libgl1-mesa-dev libfontconfig1-dev
+      - name: Get Aseprite URL
+        shell: bash
+        run: |
+          ASEPRITE_URL=$(curl -s https://api.github.com/repos/aseprite/aseprite/releases/latest | jq -r '.assets[0].browser_download_url')
+          echo "ASEPRITE_URL=${ASEPRITE_URL}" >> $GITHUB_ENV
+      - name: Download And Unzip Aseprite
+        shell: bash
+        run: |
+          mkdir -p $HOME/deps/aseprite
+          curl -L $ASEPRITE_URL -o $HOME/deps/aseprite.zip
+          unzip -q $HOME/deps/aseprite.zip -d $HOME/deps/aseprite
+      - name: Build Aseprite
+        shell: bash
+        run: |
+          cd $HOME/deps/aseprite
+          mkdir build
+          cd build
+          cmake \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_CXX_FLAGS:STRING=-stdlib=libstdc++ \
+            -DCMAKE_EXE_LINKER_FLAGS:STRING=-stdlib=libstdc++ \
+            -DLAF_BACKEND=skia \
+            -DSKIA_DIR=$HOME/deps/skia \
+            -DSKIA_LIBRARY_DIR=$HOME/deps/skia/out/Release-x64 \
+            -DSKIA_LIBRARY=$HOME/deps/skia/out/Release-x64/libskia.a \
+            -G Ninja \
+            ..
+          ninja aseprite
+        env:
+          CC: clang
+          CXX: clang++
+      - name: Upload Aseprite Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aseprite-Latest-Linux-x86_64
+          path: /home/runner/deps/aseprite/build/bin
