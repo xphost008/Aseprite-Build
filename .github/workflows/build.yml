@@ -151,4 +151,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Aseprite-Latest
-          path: $HOME/deps/aseprite/build
+          path: /Users/runner/deps/aseprite/build
