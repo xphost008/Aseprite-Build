@@ -96,6 +96,7 @@ jobs:
         run: |
           brew update
           brew install cmake ninja
+      - name: Download And Unzip Aseprite
         shell: bash
         run: |
           mkdir -p $HOME/deps/aseprite
