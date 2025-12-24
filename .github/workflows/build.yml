@@ -62,7 +62,7 @@ jobs:
       - name: Upload Aseprite Build
         uses: actions/upload-artifact@v4
         with:
-          name: Aseprite-Latest-Windows-x86_64
+          name: Aseprite-${{ github.event.inputs.asepriteVersion }}-Windows-x86_64
           path: C:\deps\aseprite\build\bin
   macOS-Build:
     strategy:
@@ -124,7 +124,7 @@ jobs:
       - name: Upload Aseprite Build
         uses: actions/upload-artifact@v4
         with:
-          name: Aseprite-Latest-macOS-${{ matrix.build.arch }}
+          name: Aseprite-${{ github.event.inputs.asepriteVersion }}-macOS-${{ matrix.build.arch }}
           path: /Users/runner/deps/aseprite/build/bin
   Linux-Build:
     strategy:
@@ -176,5 +176,5 @@ jobs:
       - name: Upload Aseprite Build
         uses: actions/upload-artifact@v4
         with:
-          name: Aseprite-Latest-Linux-x86_64
+          name: Aseprite-${{ github.event.inputs.asepriteVersion }}-Linux-x86_64
           path: /home/runner/deps/aseprite/build/bin
