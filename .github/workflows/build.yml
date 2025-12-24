@@ -89,7 +89,7 @@ jobs:
       - name: Upload Aseprite Build
         uses: actions/upload-artifact@v4
         with:
-          name: Aseprite-Latest
+          name: Aseprite-Latest-Windows-x86_64
           path: C:\deps\aseprite\build\Binary
   macOS-Build:
     strategy:
@@ -162,5 +162,5 @@ jobs:
       - name: Upload Aseprite Build
         uses: actions/upload-artifact@v4
         with:
-          name: Aseprite-Latest
+          name: Aseprite-Latest-macOS-${{arch}}
           path: /Users/runner/deps/aseprite/build
