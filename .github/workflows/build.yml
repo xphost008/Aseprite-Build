@@ -2,8 +2,17 @@ name: Aseprite Build
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
+    skiaTagName:
+      description: Skia 的最新版本 Tag 名 
+      required: true
+    asepriteTagName:
+      description: Aseprite 的最新版本 Tag 名
+      required: true
+    asepriteVersion:
+      description: Aseprite 的最新版本名
+      required: true
+  # push:
+  #   branches: [main]
   
 jobs:
   Windows-Build:
@@ -13,60 +22,23 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Get Skia URL
-        shell: pwsh
-        run: |
-          Write-Host "Start Request Skia URL"
-          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/aseprite/skia/releases/latest" -Method Get
-          $url = 'https://github.com/aseprite/skia/releases/download/' + $response.tag_name + '/Skia-Windows-Release-x64.zip'
-          Write-Host "Skia URL: $url"
-          echo ('SKIA_URL=' + $url) >> $env:GITHUB_ENV
       - name: Download And Unzip Skia
         shell: pwsh
         run: |
           mkdir C:\deps
-          Invoke-WebRequest -Uri $env:SKIA_URL -OutFile "C:\deps\skia.zip"
+          Invoke-WebRequest -Uri https://github.com/aseprite/skia/releases/download/${{ github.event.inputs.skiaTagName }}/Skia-Windows-Release-x64.zip -OutFile "C:\deps\skia.zip"
           Expand-Archive -Path "C:\deps\skia.zip" -DestinationPath "C:\deps\skia"
           echo "SKIA_PATH=C:\deps\skia" >> $env:GITHUB_ENV
-      - name: Get Cmake Version
+      - name: Install CMake and Ninja
         shell: pwsh
         run: |
-          Write-Host "Start Request Cmake URL"
-          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/Kitware/CMake/releases/latest" -Method Get
-          $version = $response.tag_name -replace 'v', ''
-          Write-Host "CMAKE Version: $version"
-          echo ('CMAKE_VERSION=' + $version) >> $env:GITHUB_ENV
-      - name: Download And Unzip Cmake
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri ('https://github.com/Kitware/CMake/releases/download/v' + $env:CMAKE_VERSION + '/cmake-' + $env:CMAKE_VERSION + '-windows-x86_64.zip') -OutFile "C:\deps\cmake.zip"
-          Expand-Archive -Path "C:\deps\cmake.zip" -DestinationPath "C:\deps\cmake"
-          echo ('CMAKE_PATH=C:\deps\cmake\cmake-' + $env:CMAKE_VERSION + '-windows-x86_64') >> $env:GITHUB_ENV
-          echo ('C:\deps\cmake\cmake-' + $env:CMAKE_VERSION + '-windows-x86_64\bin') >> $env:GITHUB_PATH
-      - name: Get Ninja URL
-        shell: pwsh
-        run: |
-          Write-Host "Start Request Ninja URL"
-          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/ninja-build/ninja/releases/latest" -Method Get
-          $url = ($response.assets | Where-Object {$_.name -eq "ninja-win.zip"} ).browser_download_url
-          Write-Host "NINJA URL: $url"
-          echo "NINJA_URL=$url" >> $env:GITHUB_ENV
-      - name: Download And Unzip Ninja
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri $env:NINJA_URL -OutFile "C:\deps\ninja.zip"
-          Expand-Archive -Path "C:\deps\ninja.zip" -DestinationPath "$CMAKE_PATH\bin"
-      - name: Get Aseprite URL
-        shell: pwsh
-        run: |
-          $response = Invoke-RestMethod -Uri "https://api.github.com/repos/aseprite/aseprite/releases/latest" -Method Get
-          $url = $response.assets[0].browser_download_url
-          Write-Host "Aseprite URL: $url"
-          echo ('ASEPRITE_URL=' + $url) >> $env:GITHUB_ENV
+          choco install cmake --installargs "ADD_CMAKE_TO_PATH=System"
+          choco install ninja
+          RefreshEnv
       - name: Download And Unzip Aseprite
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri $env:ASEPRITE_URL -OutFile "C:\deps\aseprite.zip"
+          Invoke-WebRequest -Uri https://github.com/aseprite/aseprite/releases/download/v${{ github.event.inputs.asepriteTagName }}/Aseprite-v${{ github.event.inputs.asepriteVersion }}-Source.zip -OutFile "C:\deps\aseprite.zip"
           Expand-Archive -Path "C:\deps\aseprite.zip" -DestinationPath "C:\deps\aseprite"
       - name: Add MSBuild
         uses: microsoft/setup-msbuild@v2
@@ -111,18 +83,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Get Skia URL
-        shell: bash
-        run: |
-          SKIA_TAG=$(curl -s https://api.github.com/repos/aseprite/skia/releases/latest | jq -r '.tag_name')
-          echo $SKIA_TAG
-          SKIA_URL=https://github.com/aseprite/skia/releases/download/$SKIA_TAG/Skia-macOS-Release-${{ matrix.build.arch2 }}.zip
-          echo "SKIA_URL=${SKIA_URL}" >> $GITHUB_ENV
       - name: Download And Unzip Skia
         shell: bash
         run: |
           mkdir $HOME/deps
-          curl -L $SKIA_URL -o $HOME/deps/skia.zip
+          curl -L https://github.com/aseprite/skia/releases/download/${{ github.event.inputs.skiaTagName }}/Skia-macOS-Release-${{ matrix.build.arch2 }}.zip -o $HOME/deps/skia.zip
           mkdir -p $HOME/deps/skia
           unzip -q $HOME/deps/skia.zip -d $HOME/deps/skia
           echo "SKIA_PATH=$HOME/deps/skia" >> $GITHUB_ENV
@@ -131,16 +96,10 @@ jobs:
         run: |
           brew update
           brew install cmake ninja
-      - name: Get Aseprite URL
-        shell: bash
-        run: |
-          ASEPRITE_URL=$(curl -s https://api.github.com/repos/aseprite/aseprite/releases/latest | jq -r '.assets[0].browser_download_url')
-          echo "ASEPRITE_URL=${ASEPRITE_URL}" >> $GITHUB_ENV
-      - name: Download And Unzip Aseprite
         shell: bash
         run: |
           mkdir -p $HOME/deps/aseprite
-          curl -L $ASEPRITE_URL -o $HOME/deps/aseprite.zip
+          curl -L https://github.com/aseprite/aseprite/releases/download/v${{ github.event.inputs.asepriteTagName }}/Aseprite-v${{ github.event.inputs.asepriteVersion }}-Source.zip -o $HOME/deps/aseprite.zip
           unzip -q $HOME/deps/aseprite.zip -d $HOME/deps/aseprite
       - name: Build Aseprite
         shell: bash
@@ -172,18 +131,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Get Skia URL
-        shell: bash
-        run: |
-          SKIA_TAG=$(curl -s https://api.github.com/repos/aseprite/skia/releases/latest | jq -r '.tag_name')
-          echo $SKIA_TAG
-          SKIA_URL=https://github.com/aseprite/skia/releases/download/$SKIA_TAG/Skia-Linux-Release-x64.zip
-          echo "SKIA_URL=${SKIA_URL}" >> $GITHUB_ENV
       - name: Download And Unzip Skia
         shell: bash
         run: |
           mkdir $HOME/deps
-          curl -L $SKIA_URL -o $HOME/deps/skia.zip
+          curl -L https://github.com/aseprite/skia/releases/download/${{ github.event.inputs.skiaTagName }}/Skia-Linux-Release-x64.zip -o $HOME/deps/skia.zip
           mkdir -p $HOME/deps/skia
           unzip -q $HOME/deps/skia.zip -d $HOME/deps/skia
           echo "SKIA_PATH=$HOME/deps/skia" >> $GITHUB_ENV
@@ -191,16 +143,11 @@ jobs:
         shell: bash
         run: |
           sudo apt install -y g++ clang cmake ninja-build libx11-dev libxcursor-dev libxi-dev libxrandr-dev libgl1-mesa-dev libfontconfig1-dev
-      - name: Get Aseprite URL
-        shell: bash
-        run: |
-          ASEPRITE_URL=$(curl -s https://api.github.com/repos/aseprite/aseprite/releases/latest | jq -r '.assets[0].browser_download_url')
-          echo "ASEPRITE_URL=${ASEPRITE_URL}" >> $GITHUB_ENV
       - name: Download And Unzip Aseprite
         shell: bash
         run: |
           mkdir -p $HOME/deps/aseprite
-          curl -L $ASEPRITE_URL -o $HOME/deps/aseprite.zip
+          curl -L https://github.com/aseprite/aseprite/releases/download/v${{ github.event.inputs.asepriteTagName }}/Aseprite-v${{ github.event.inputs.asepriteVersion }}-Source.zip -o $HOME/deps/aseprite.zip
           unzip -q $HOME/deps/aseprite.zip -d $HOME/deps/aseprite
       - name: Build Aseprite
         shell: bash
