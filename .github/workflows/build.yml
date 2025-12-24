@@ -2,15 +2,16 @@ name: Aseprite Build
 
 on:
   workflow_dispatch:
-    skiaTagName:
-      description: Skia 的最新版本 Tag 名 
-      required: true
-    asepriteTagName:
-      description: Aseprite 的最新版本 Tag 名
-      required: true
-    asepriteVersion:
-      description: Aseprite 的最新版本名
-      required: true
+    inputs:
+      skiaTagName:
+        description: Skia 的最新版本 Tag 名 
+        required: true
+      asepriteTagName:
+        description: Aseprite 的最新版本 Tag 名
+        required: true
+      asepriteVersion:
+        description: Aseprite 的最新版本名
+        required: true
   # push:
   #   branches: [main]
   
