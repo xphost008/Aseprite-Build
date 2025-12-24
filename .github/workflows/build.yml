@@ -120,6 +120,7 @@ jobs:
       - name: Download And Unzip Skia
         shell: bash
         run: |
+          echo $SKIA_URL
           mkdir $HOME/deps
           curl -L $SKIA_URL -o $HOME/deps/skia.zip
           mkdir -p $HOME/deps/skia
