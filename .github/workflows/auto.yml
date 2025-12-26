@@ -146,7 +146,7 @@ jobs:
       - name: Upload Aseprite Build
         uses: actions/upload-artifact@v4
         with:
-          name: Aseprite-${{ steps.vesion.outputs.version }}-macOS-${{ matrix.build.arch }}
+          name: Aseprite-${{ steps.version.outputs.version }}-macOS-${{ matrix.build.arch }}
           path: /Users/runner/deps/aseprite/build/bin
   Linux-Build:
     strategy:
