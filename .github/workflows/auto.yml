@@ -117,12 +117,12 @@ jobs:
           ASEPRITE_RAW=$(curl -s https://api.github.com/repos/aseprite/aseprite/releases/latest)
           ASEPRITE_URL=$(echo $ASEPRITE_RAW | jq -r '.assets[0].browser_download_url')
           ASEPRITE_TAG=$(echo $ASEPRITE_RAW | jq -r '.tag_name')
-          echo $ASEPRITE_TAG
           echo "ASEPRITE_URL=${ASEPRITE_URL}" >> $GITHUB_ENV
           echo "ASEPRITE_TAG=${ASEPRITE_TAG}" >> $GITHUB_OUTPUT
       - name: Download And Unzip Aseprite
         shell: bash
         run: |
+          echo ${{ steps.version.outputs.ASEPRITE_TAG }}
           mkdir -p $HOME/deps/aseprite
           curl -L $ASEPRITE_URL -o $HOME/deps/aseprite.zip
           unzip -q $HOME/deps/aseprite.zip -d $HOME/deps/aseprite
