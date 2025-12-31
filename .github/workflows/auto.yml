@@ -122,7 +122,6 @@ jobs:
       - name: Download And Unzip Aseprite
         shell: bash
         run: |
-          echo ${{ steps.version.outputs.ASEPRITE_TAG }}
           mkdir -p $HOME/deps/aseprite
           curl -L $ASEPRITE_URL -o $HOME/deps/aseprite.zip
           unzip -q $HOME/deps/aseprite.zip -d $HOME/deps/aseprite
